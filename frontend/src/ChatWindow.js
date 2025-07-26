@@ -1,74 +1,89 @@
-import React, { useState, useEffect } from 'react';
-import MessageList from './MessageList';
-import UserInput from './UserInput';
-import axios from 'axios';
-import './ChatWindow.css';
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 
-const CHAT_API_URL = 'http://127.0.0.1:8001/api/chat';
-const USERS_API_URL = 'http://127.0.0.1:8001/users/';
+const USERS_API_URL = "http://127.0.0.1:8001/users/?username=guest_user";
+const CHAT_API_URL = "http://127.0.0.1:8001/api/chat";
 
-function ChatWindow() {
-  const [messages, setMessages] = useState([]);
+const ChatWindow = () => {
   const [userId, setUserId] = useState(null);
   const [sessionId, setSessionId] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [input, setInput] = useState("");
+  const [chatHistory, setChatHistory] = useState([]);
 
+  // Get user_id from FastAPI
   useEffect(() => {
-    const createOrGetUserId = async () => {
+    const fetchUserId = async () => {
       try {
-        const response = await axios.post(`${USERS_API_URL}?username=guest_user`);
-        setUserId(response.data.id);
-        console.log('User created:', response.data.id);
-      } catch (error) {
-        console.error('Error creating user:', error);
+        const res = await axios.post(USERS_API_URL);
+        setUserId(res.data.user_id);
+        console.log("Fetched user_id:", res.data.user_id);
+      } catch (err) {
+        console.error("Error getting user_id:", err);
       }
     };
-    if (!userId) {
-      createOrGetUserId();
-    }
-  }, [userId]);
+    fetchUserId();
+  }, []);
 
-  const handleSendMessage = async (messageContent) => {
-    if (!userId) {
-      console.error('User ID not available.');
-      return;
-    }
+  const sendMessage = async () => {
+    if (!input.trim() || !userId) return;
 
-    const userMessage = { role: 'user', content: messageContent };
-    setMessages(prevMessages => [...prevMessages, userMessage]);
-    setIsLoading(true);
+    const newMessage = { role: "user", content: input };
+    setChatHistory([...chatHistory, newMessage]);
 
     try {
-      const payload = {
+      console.log("Sending to backend:", {
         user_id: userId,
-        message: messageContent,
-        session_id: sessionId
-      };
-      
-      const response = await axios.post(CHAT_API_URL, payload);
-      
-      setSessionId(response.data.session_id);
-      const aiMessage = { role: 'assistant', content: response.data.response };
-      setMessages(prevMessages => [...prevMessages, aiMessage]);
+        message: input,
+        session_id: sessionId,
+      });
 
-    } catch (error) {
-      console.error('Error sending message:', error);
-      const errorMessage = { role: 'assistant', content: 'Sorry, something went wrong. Please try again.' };
-      setMessages(prevMessages => [...prevMessages, errorMessage]);
-    } finally {
-      setIsLoading(false);
+      const res = await axios.post(CHAT_API_URL, {
+        user_id: userId,
+        message: input,
+        session_id: sessionId,
+      });
+
+      setChatHistory([
+        ...chatHistory,
+        newMessage,
+        { role: "assistant", content: res.data.response },
+      ]);
+      setSessionId(res.data.session_id); // Save session
+      setInput("");
+    } catch (err) {
+      console.error("Error sending message:", err.response?.data || err.message);
     }
   };
 
   return (
-    <div className="chat-window">
-      <header className="chat-header">
-        <h1>AI Assistant</h1>
-      </header>
-      <MessageList messages={messages} />
-      <UserInput onSendMessage={handleSendMessage} isLoading={isLoading} />
+    <div style={{ padding: "20px" }}>
+      <h2>Chat with AI</h2>
+      <div
+        style={{
+          height: "300px",
+          overflowY: "auto",
+          border: "1px solid #ccc",
+          padding: "10px",
+          marginBottom: "10px",
+        }}
+      >
+        {chatHistory.map((msg, i) => (
+          <p key={i}>
+            <strong>{msg.role}:</strong> {msg.content}
+          </p>
+        ))}
+      </div>
+      <input
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        placeholder="Type a message..."
+        style={{ width: "80%", padding: "8px" }}
+      />
+      <button onClick={sendMessage} style={{ padding: "8px 16px", marginLeft: "10px" }}>
+        Send
+      </button>
     </div>
   );
-}
+};
 
 export default ChatWindow;
