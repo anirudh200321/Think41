@@ -7,10 +7,12 @@ from bson import ObjectId
 from pydantic_core import core_schema
 
 # --- MongoDB Connection Setup ---
-MONGO_CLIENT = pymongo.MongoClient("mongodb://localhost:27017/")
+print("Initializing MongoDB connection...")
+MONGO_CLIENT = pymongo.MongoClient("mongodb://localhost:27017/", serverSelectionTimeoutMS=5000)
 DB = MONGO_CLIENT["conversation_history_db"]
 SESSIONS_COLLECTION = DB["sessions"]
 USERS_COLLECTION = DB["users"]
+print("MongoDB connection complete.")
 
 # --- Pydantic Models for Data Schemas ---
 
@@ -37,7 +39,7 @@ class PyObjectId(ObjectId):
                 raise ValueError('Invalid ObjectId')
             return ObjectId(value)
 
-        return core_schema.no_info_after_validator_function( # Corrected line here
+        return core_schema.no_info_after_validator_function(
             validate_from_str,
             core_schema.str_schema(),
             serialization=core_schema.to_string_ser_schema(),
@@ -68,7 +70,9 @@ class User(BaseModel):
 
 
 # --- FastAPI Application ---
+print("Creating FastAPI app instance...")
 app = FastAPI()
+print("FastAPI app instance created.")
 
 # Endpoint to create a new user
 @app.post("/users/", response_model=User)
