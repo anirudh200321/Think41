@@ -1,0 +1,27 @@
+.message-container {
+  display: flex;
+  word-wrap: break-word;
+  max-width: 80%;
+}
+
+.user-message {
+  align-self: flex-end;
+  background-color: #e6f7ff;
+  border-radius: 12px 12px 0 12px;
+}
+
+.ai-message {
+  align-self: flex-start;
+  background-color: #f0f0f0;
+  border-radius: 12px 12px 12px 0;
+}
+
+.message-content {
+  padding: 10px 15px;
+}
+
+.message-content p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}

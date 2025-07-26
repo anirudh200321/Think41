@@ -1,1 +1,12 @@
 venv
+.env
+node_modules
+.DS_Store
+*.log
+*.pyc
+__pycache__
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+*.env   
